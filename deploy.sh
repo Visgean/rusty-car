@@ -16,4 +16,5 @@ readonly SOURCE_PATH=./target/${TARGET_ARCH}/release/rusty-car
 #cargo build --release
 cargo build --release --target=${TARGET_ARCH}
 rsync ${SOURCE_PATH} ${TARGET_HOST}:${TARGET_PATH}
-ssh -t ${TARGET_HOST} ${TARGET_PATH}
+#ssh -t ${TARGET_HOST} ${TARGET_PATH}
+ssh -t ${TARGET_HOST} sudo systemctl restart rusty-car.service
