@@ -1,22 +1,30 @@
-use actix_web::{web, App, HttpRequest, HttpServer, Responder};
+use linux_embedded_hal::i2cdev::linux::LinuxI2CError;
+use crate::motors::MotorControl;
+use std::thread::sleep;
+use std::time::Duration;
 
-async fn greet(req: HttpRequest) -> impl Responder {
-    let name = req.match_info().get("name").unwrap_or("World");
-    format!("Ja uz fakt nevim {}!", &name)
-}
+mod motors;
+
+fn main() {
+    let mut motor = motors::MotorControl::new().unwrap();
+
+    println!("The car is moving forward");
+    motor.move_all_wheels(1000, 1000, 1000, 1000).unwrap();
 
 
+    println!("The car is moving forward");
+    motor.move_all_wheels(1000, 1000, 1000, 1000);
+    sleep(Duration::from_secs(1));
+    println!("The car is going backwards");
+    motor.move_all_wheels(-1000, -1000, -1000, -1000);
+    sleep(Duration::from_secs(1));
+    println!("The car is turning left");
+    motor.move_all_wheels(-1500, -1500, 2000, 2000);
+    sleep(Duration::from_secs(1));
+    println!("The car is turning right");
+    motor.move_all_wheels(2000, 2000, -1500, -1500);
+    sleep(Duration::from_secs(1));
+    println!("\nEnd of program");
+    motor.move_all_wheels(0, 0, 0, 0);
 
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    println!("Hello World server started");
-    HttpServer::new(|| {
-        App::new()
-            .route("/", web::get().to(greet))
-            .route("/{name}", web::get().to(greet))
-    })
-    .bind("[::]:8080")?
-    .run()
-    .await
 }
