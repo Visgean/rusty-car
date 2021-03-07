@@ -21,8 +21,11 @@ pub enum Wheel {
     RightLower,
 }
 
-const MAX_WHEEL_SPEED: i32 = 4095;
-const MIN_WHEEL_SPEED: i32 = -4095;
+pub const MAX_WHEEL_SPEED: i32 = 4095;
+pub const MIN_WHEEL_SPEED: i32 = -4095;
+
+// there is no point in running the motor at these speeds to it is better to simply turn it off
+pub const MIN_SPEED_THRESHOLD: i32 = 30;
 
 const MODE1: u8 = 0x00;
 const PRESCALE: u8 = 0xFE;
@@ -110,11 +113,16 @@ impl MotorControl {
     }
 
 
-    pub fn set_wheel_speed(&mut self, wheel: Wheel, duty: i32) -> Result<(), LinuxI2CError> {
+    pub fn set_wheel_speed(&mut self, wheel: Wheel, mut duty: i32) -> Result<(), LinuxI2CError> {
         println!("Setting wheel {:#?}, speed to {} ", wheel, duty);
 
+        if duty != 0 && duty < MIN_SPEED_THRESHOLD && duty > -MIN_SPEED_THRESHOLD {
+            println!("Duty bellow activation threshold, setting to 0");
+            duty = 0;
+        }
+
         let control = WheelControl::get_control(wheel);
-        let duty = self.limit_duty(duty);
+        duty = self.limit_duty(duty);
 
         // FIXME: why is this being set to max instead of 0?
         if duty == 0 {
@@ -125,7 +133,7 @@ impl MotorControl {
             self.set_motor_power(control.forward, duty)?;
         } else if duty < 0 {
             self.set_motor_power(control.forward, 0)?;
-            self.set_motor_power(control.backward, duty)?;
+            self.set_motor_power(control.backward, duty.abs())?;
         }
 
         Ok(())

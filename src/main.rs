@@ -2,29 +2,43 @@ use linux_embedded_hal::i2cdev::linux::LinuxI2CError;
 use crate::motors::MotorControl;
 use std::thread::sleep;
 use std::time::Duration;
+use gilrs::{Gilrs, Button, Event, Axis};
+use gilrs::ev::state::GamepadState;
 
 mod motors;
 
+
+fn controller_loop(mut motor: MotorControl) {
+    let mut gilrs = Gilrs::new().unwrap();
+
+    // Iterate over all connected gamepads
+    for (_id, gamepad) in gilrs.gamepads() {
+        println!("{} is {:?}", gamepad.name(), gamepad.power_info());
+    }
+
+    let mut active_gamepad = None;
+
+    loop {
+        // Examine new events
+        while let Some(Event { id, event, time }) = gilrs.next_event() {
+            active_gamepad = Some(id);
+
+            // You can also use cached gamepad state
+            if let Some(gamepad) = active_gamepad.map(|id| gilrs.gamepad(id)) {
+                let max_speed = motors::MAX_WHEEL_SPEED as f32;
+
+                let right_side = (gamepad.value(Axis::RightStickY) * max_speed) as i32;
+                let left_side = (gamepad.value(Axis::LeftStickY) * max_speed) as i32;
+
+
+                motor.move_all_wheels(-left_side, -left_side, -right_side, -right_side).unwrap();
+            }
+        }
+    }
+}
+
+
 fn main() {
     let mut motor = motors::MotorControl::new().unwrap();
-
-    println!("The car is moving forward");
-    motor.move_all_wheels(1000, 1000, 1000, 1000).unwrap();
-
-
-    println!("The car is moving forward");
-    motor.move_all_wheels(1000, 1000, 1000, 1000);
-    sleep(Duration::from_secs(1));
-    println!("The car is going backwards");
-    motor.move_all_wheels(-1000, -1000, -1000, -1000);
-    sleep(Duration::from_secs(1));
-    println!("The car is turning left");
-    motor.move_all_wheels(-1500, -1500, 2000, 2000);
-    sleep(Duration::from_secs(1));
-    println!("The car is turning right");
-    motor.move_all_wheels(2000, 2000, -1500, -1500);
-    sleep(Duration::from_secs(1));
-    println!("\nEnd of program");
-    motor.move_all_wheels(0, 0, 0, 0);
-
+    controller_loop(motor)
 }

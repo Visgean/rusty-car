@@ -11,3 +11,5 @@ edition = "2018"
 #i2c-linux = "0.1.2"
 pwm-pca9685 = "0.3"
 linux-embedded-hal = "0.3"
+
+gilrs = "0.8.0"
