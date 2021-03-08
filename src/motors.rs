@@ -1,5 +1,4 @@
 use linux_embedded_hal::I2cdev;
-// use pwm_pca9685::{Address, Pca9685, Channel};
 use linux_embedded_hal::i2cdev::core::I2CDevice;
 use linux_embedded_hal::i2cdev::linux::LinuxI2CError;
 use std::cmp::{min, max};
@@ -7,11 +6,6 @@ use std::thread::sleep;
 use std::time::Duration;
 
 
-pub struct MotorControl {
-    // pwm: Pca9685<I2cdev>,
-
-    dev: I2cdev,
-}
 
 #[derive(Debug)]
 pub enum Wheel {
@@ -54,6 +48,9 @@ impl WheelControl {
     }
 }
 
+pub struct MotorControl {
+    dev: I2cdev,
+}
 
 impl MotorControl {
     pub fn new() -> Result<Self, LinuxI2CError> {
@@ -97,12 +94,15 @@ impl MotorControl {
     }
 
     fn write(&mut self, channel: u8, val: u8) -> Result<(), LinuxI2CError> {
+        // write to a single resister
         println!("reg: {} = {}", channel, val);
 
         self.dev.smbus_write_byte_data(channel, val)
     }
 
     fn set_motor_power(&mut self, channel: u8, duty: i32) -> Result<(), LinuxI2CError> {
+        // fixme: maybe duty should u32?
+
         println!("Setting motor power: {} = {}", channel, duty);
         self.write(LED0_ON_L + 4 * channel, 0)?;
         self.write(LED0_ON_H + 4 * channel, 0)?;
